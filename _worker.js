@@ -4793,10 +4793,16 @@ function base64SecretDecode(encoded, secret) {
 
 function 获取传输协议配置(配置 = {}) {
 	const 是gRPC = 配置.传输协议 === 'grpc';
-	// xhttp 导出不再附加 xPaddingObfs extra：标准客户端（Xray/honk）均不支持该私有字段，
-	// honk 会因未知 xhttp extra 拒收整个节点导致订阅无法导入；服务端校验对缺失 padding 放行（校验叉HTTPPadding）。
+	const { 头: 本机Padding头, 键: 本机Padding键 } = 获取叉HTTPPadding标识(配置.UUID);
+	const 叉混淆JSON = {
+		"xPaddingObfsMode": true,
+		"xPaddingMethod": "tokenish",
+		"xPaddingPlacement": "queryInHeader",
+		"xPaddingHeader": 本机Padding头,
+		"xPaddingKey": 本机Padding键
+	};
 	return {
-		type: 是gRPC ? (配置.gRPC模式 === 'multi' ? 'grpc&mode=multi' : 'grpc&mode=gun') : (配置.传输协议 === 'xhttp' ? 'xhttp&mode=stream-one' : 'ws'),
+		type: 是gRPC ? (配置.gRPC模式 === 'multi' ? 'grpc&mode=multi' : 'grpc&mode=gun') : (配置.传输协议 === 'xhttp' ? `xhttp&mode=stream-one&extra=${encodeURIComponent(JSON.stringify(叉混淆JSON))}` : 'ws'),
 		路径字段名: 是gRPC ? 'serviceName' : 'path',
 		域名字段名: 是gRPC ? 'authority' : 'host'
 	};
